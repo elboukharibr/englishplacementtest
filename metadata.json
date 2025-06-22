@@ -1,0 +1,6 @@
+{
+  "name": "Interactive English Placement Test",
+  "description": "An interactive English placement test with multiple-choice questions, reading comprehension, and writing prompts. Users receive a score and an estimated English level upon completion.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
