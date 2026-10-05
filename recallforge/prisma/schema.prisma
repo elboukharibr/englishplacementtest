@@ -1,0 +1,535 @@
+// RecallForge database schema.
+// Embedding columns use pgvector and are written/read with raw SQL
+// (Prisma has no native vector type yet). See prisma/migrations for the
+// extension and index setup.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_DATABASE_URL")
+  extensions = [vector]
+}
+
+// ───────────────────────── Users & auth ─────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String?
+  passwordHash       String?
+  emailVerifiedAt    DateTime?
+  googleId           String?   @unique
+  image              String?
+  role               Role      @default(USER)
+  // Billing state is derived server-side from Subscription rows (webhooks).
+  plan               Plan      @default(FREE)
+  subscriptionStatus String?
+  stripeCustomerId   String?   @unique
+
+  // Onboarding
+  onboardedAt   DateTime?
+  studyContext  String? // university | competitive_exam | certification | research | language | other
+  primaryGoal   String? // memorize | understand | exam | oral | papers | retention
+  examDate      DateTime?
+
+  // Study preferences
+  dailyReviewGoal    Int     @default(50)
+  targetRetention    Float   @default(0.9)
+  defaultDeckSize    Int     @default(40)
+  defaultDifficulty  String  @default("intermediate")
+  preferredStudyTime String? // e.g. "08:00"
+  timezone           String  @default("UTC")
+  emailReminders     Boolean @default(false)
+  notificationPrefs  Json    @default("{\"due\":true,\"mastery\":true,\"inactive\":true,\"exam\":true}")
+  reducedMotion      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions       Session[]
+  tokens         AuthToken[]
+  documents      Document[]
+  decks          Deck[]
+  folders        Folder[]
+  cards          Card[]
+  reviews        CardReview[]
+  studySessions  StudySession[]
+  examAttempts   ExamAttempt[]
+  tutorMessages  TutorMessage[]
+  subscriptions  Subscription[]
+  usage          Usage[]
+  notifications  Notification[]
+  aiCalls        AiCall[]
+  jobs           Job[]
+}
+
+model Session {
+  // id = sha256(session token); the raw token only lives in the cookie.
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model AuthToken {
+  id        String        @id @default(cuid())
+  userId    String
+  type      AuthTokenType
+  tokenHash String        @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+model RateLimit {
+  key         String
+  windowStart DateTime
+  count       Int      @default(0)
+
+  @@id([key, windowStart])
+}
+
+// ───────────────────────── Documents ─────────────────────────
+
+enum DocumentStatus {
+  UPLOADED
+  EXTRACTING
+  ANALYZING
+  READY
+  FAILED
+}
+
+model Document {
+  id            String         @id @default(cuid())
+  userId        String
+  title         String
+  filename      String
+  storageKey    String?
+  fileType      String // pdf | docx | pptx | epub | txt | paste
+  mimeType      String
+  sizeBytes     Int            @default(0)
+  pageCount     Int?
+  wordCount     Int?
+  status        DocumentStatus @default(UPLOADED)
+  stage         String? // human-readable current step
+  progress      Int            @default(0)
+  errorReason   String?
+  subject       String?
+  course        String?
+  // Cached AI study analysis (counts, estimates, top concepts).
+  analysis      Json?
+  extractionWarnings Json?
+  isSample      Boolean        @default(false)
+  processingMs  Int?
+  createdAt     DateTime       @default(now())
+  processedAt   DateTime?
+  updatedAt     DateTime       @updatedAt
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sections DocumentSection[]
+  concepts Concept[]
+  decks    Deck[]
+
+  @@index([userId, createdAt])
+}
+
+model DocumentSection {
+  id          String   @id @default(cuid())
+  documentId  String
+  order       Int
+  heading     String?
+  // Breadcrumb e.g. "Chapter 3 › Platformization › Definition"
+  path        String?
+  level       Int      @default(1)
+  text        String
+  // [{ page: number, offset: number }] — char offset where each page starts inside `text`.
+  pageOffsets Json?
+  pageStart   Int?
+  pageEnd     Int?
+  tokenCount  Int      @default(0)
+  isReferences Boolean @default(false)
+  embedding   Unsupported("vector(1536)")?
+  createdAt   DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  cards    Card[]
+  concepts Concept[]
+
+  @@index([documentId, order])
+}
+
+model Concept {
+  id          String   @id @default(cuid())
+  documentId  String
+  sectionId   String?
+  name        String
+  normalized  String
+  // definition | theory | scholar | process | mechanism | cause_effect | comparison | example | date_fact | formula | classification | controversy | evidence | method | concept
+  kind        String
+  summary     String
+  importance  Int      @default(50)
+  mentions    Int      @default(1)
+  related     String[] @default([])
+  examRelevant Boolean @default(false)
+  pageStart   Int?
+  createdAt   DateTime @default(now())
+
+  document Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  section  DocumentSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  cards    Card[]
+
+  @@index([documentId, importance])
+  @@index([documentId, normalized])
+}
+
+// ───────────────────────── Decks & cards ─────────────────────────
+
+model Folder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderTree")
+  decks    Deck[]
+
+  @@index([userId])
+}
+
+enum DeckStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
+model Deck {
+  id                 String     @id @default(cuid())
+  userId             String
+  documentId         String?
+  folderId           String?
+  name               String
+  description        String?
+  subject            String?
+  tags               String[]   @default([])
+  difficulty         String     @default("intermediate")
+  studyGoal          String?
+  favorite           Boolean    @default(false)
+  archived           Boolean    @default(false)
+  isSample           Boolean    @default(false)
+  status             DeckStatus @default(READY)
+  statusMessage      String?
+  progress           Int        @default(100)
+  generationSettings Json?
+  // { requested, generated, rejectedUnsupported, removedDuplicates, flagged, durationMs }
+  generationReport   Json?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  lastStudiedAt      DateTime?
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document      Document?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  folder        Folder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  cards         Card[]
+  studySessions StudySession[]
+  examAttempts  ExamAttempt[]
+
+  @@index([userId, archived])
+}
+
+enum CardState {
+  NEW
+  LEARNING
+  REVIEW
+  RELEARNING
+}
+
+model Card {
+  id                String    @id @default(cuid())
+  deckId            String
+  userId            String
+  conceptId         String?
+  question          String
+  answer            String
+  // basic | definition | cloze | comparison | cause_effect | scholar | application | critical | scenario | exam
+  cardType          String    @default("basic")
+  difficulty        String    @default("intermediate")
+  topic             String?
+  tags              String[]  @default([])
+  origin            String    @default("ai") // ai | manual | import | sample
+  sourceSectionId   String?
+  sourceQuote       String?
+  sourcePage        Int?
+  sourceHeading     String?
+  confidence        Float?
+  confidenceLabel   String? // high | medium | review
+  needsVerification Boolean   @default(false)
+  importance        Int       @default(50)
+  suspended         Boolean   @default(false)
+  embedding         Unsupported("vector(1536)")?
+
+  // FSRS scheduling state
+  state         CardState @default(NEW)
+  due           DateTime  @default(now())
+  stability     Float     @default(0)
+  srsDifficulty Float     @default(0)
+  elapsedDays   Int       @default(0)
+  scheduledDays Int       @default(0)
+  learningSteps Int       @default(0)
+  reps          Int       @default(0)
+  lapses        Int       @default(0)
+  lastReview    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck          Deck             @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept       Concept?         @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  sourceSection DocumentSection? @relation(fields: [sourceSectionId], references: [id], onDelete: SetNull)
+  reviews       CardReview[]
+
+  @@index([userId, due])
+  @@index([deckId, due])
+  @@index([deckId, state])
+}
+
+model CardReview {
+  id             String    @id @default(cuid())
+  cardId         String
+  userId         String
+  sessionId      String?
+  rating         Int // 1 again, 2 hard, 3 good, 4 easy
+  reviewedAt     DateTime  @default(now())
+  durationMs     Int?
+  prevState      CardState
+  state          CardState
+  scheduledDays  Int
+  scheduledMins  Int       @default(0)
+  stability      Float
+  difficulty     Float
+  retrievability Float? // predicted recall probability at the moment of review
+  nextReview     DateTime
+  isSample       Boolean   @default(false)
+
+  card    Card          @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session StudySession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, reviewedAt])
+  @@index([cardId, reviewedAt])
+}
+
+model StudySession {
+  id            String    @id @default(cuid())
+  userId        String
+  deckId        String?
+  mode          String    @default("study") // study | review | weak | exam | oral
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  cardsReviewed Int       @default(0)
+  correct       Int       @default(0)
+  accuracy      Float?
+  isSample      Boolean   @default(false)
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck    Deck?        @relation(fields: [deckId], references: [id], onDelete: SetNull)
+  reviews CardReview[]
+
+  @@index([userId, startedAt])
+}
+
+model ExamAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  deckId      String
+  mode        String   @default("written") // written | oral
+  questionType String
+  question    String
+  modelAnswer String
+  keyPoints   String[] @default([])
+  sourceSectionIds String[] @default([])
+  userAnswer  String?
+  // { accuracy, completeness, terminology, reasoning } each 0–10
+  scores      Json?
+  total       Float?
+  feedback    Json?
+  followUp    String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+  answeredAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck Deck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deckId, createdAt])
+}
+
+model TutorMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  deckId    String?
+  threadId  String
+  role      String // user | assistant
+  content   String
+  citations Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, threadId, createdAt])
+}
+
+// ───────────────────────── Billing & usage ─────────────────────────
+
+model Subscription {
+  id                     String    @id @default(cuid())
+  userId                 String
+  provider               String    @default("stripe")
+  providerSubscriptionId String    @unique
+  priceId                String?
+  plan                   Plan      @default(PRO)
+  interval               String? // month | year
+  status                 String
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BillingEvent {
+  id          String   @id // Stripe event id → idempotent webhook processing
+  type        String
+  processedAt DateTime @default(now())
+}
+
+model Usage {
+  id             String   @id @default(cuid())
+  userId         String
+  periodStart    DateTime
+  periodEnd      DateTime
+  documents      Int      @default(0)
+  pages          Int      @default(0)
+  cardsGenerated Int      @default(0)
+  aiRequests     Int      @default(0)
+  tokensIn       Int      @default(0)
+  tokensOut      Int      @default(0)
+  costMicros     Int      @default(0) // estimated AI cost in millionths of USD
+  minutesSaved   Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodStart])
+}
+
+model AiCall {
+  id         String   @id @default(cuid())
+  userId     String?
+  purpose    String
+  provider   String
+  model      String
+  tokensIn   Int      @default(0)
+  tokensOut  Int      @default(0)
+  costMicros Int      @default(0)
+  latencyMs  Int      @default(0)
+  ok         Boolean  @default(true)
+  error      String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+// ───────────────────────── Infrastructure ─────────────────────────
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json
+  status      JobStatus @default(QUEUED)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  runAt       DateTime  @default(now())
+  lockedAt    DateTime?
+  lockedBy    String?
+  lastError   String?
+  userId      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  finishedAt  DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, runAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String // due | mastery | inactive | exam | system
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
+  dedupeKey String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, createdAt])
+}
+
+model ProductEvent {
+  id        String   @id @default(cuid())
+  // Events carry ids and counts only — never document text or card content.
+  userId    String?
+  name      String
+  props     Json?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+}

@@ -1,0 +1,9 @@
+{
+  "crons": [
+    { "path": "/api/cron/jobs", "schedule": "* * * * *" },
+    { "path": "/api/cron/daily", "schedule": "17 6 * * *" }
+  ],
+  "functions": {
+    "src/app/api/cron/jobs/route.ts": { "maxDuration": 300 }
+  }
+}

@@ -1,0 +1,44 @@
+name: RecallForge CI
+
+on:
+  push:
+    paths: ["recallforge/**", ".github/workflows/recallforge-ci.yml"]
+  pull_request:
+    paths: ["recallforge/**", ".github/workflows/recallforge-ci.yml"]
+
+defaults:
+  run:
+    working-directory: recallforge
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: recallforge_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: recallforge/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: E2E
+        run: |
+          psql postgresql://postgres:postgres@localhost:5432/postgres -c 'CREATE DATABASE recallforge_e2e'
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recallforge_e2e DIRECT_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/recallforge_e2e npx prisma migrate deploy
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+        env:
+          CI: "true"
