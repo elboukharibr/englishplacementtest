@@ -1,7 +1,7 @@
 // Deterministic, offline provider for automated tests and local development without API keys.
 // It uses simple text heuristics — it is NOT a substitute for a real model, and the UI labels
 // it as such (see AI_PROVIDER=mock in README).
-import type { AICallContext, AIProvider, CardForVerification, ChatMessage, ConceptBrief, GenerationSettings, SourceChunk } from "./types";
+import type { AIProvider, CardForVerification, ChatMessage, ConceptBrief, GenerationSettings, SourceChunk } from "./types";
 import type { CandidateCard, Difficulty, Evaluation, ExamQuestion, ExtractedConcept, ImproveAction, Verification } from "./schemas";
 import { normalizeText } from "@/lib/utils";
 
@@ -208,7 +208,7 @@ export class MockAIProvider implements AIProvider {
     return sentences(chunk.text).slice(0, 2).join(" ");
   }
 
-  async *tutorStream(input: { messages: ChatMessage[]; sources: SourceChunk[] }, _ctx: AICallContext): AsyncIterable<string> {
+  async *tutorStream(input: { messages: ChatMessage[]; sources: SourceChunk[] }): AsyncIterable<string> {
     const q = input.messages[input.messages.length - 1]?.content ?? "";
     const parts: string[] = ["(Mock tutor — configure an AI provider for real answers.)\n\n"];
     input.sources.slice(0, 2).forEach((s, i) => {

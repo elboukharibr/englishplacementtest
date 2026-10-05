@@ -31,7 +31,12 @@ export const DELETE = withUser<{ folderId: string }>(async (_req, user, { folder
   let grew = true;
   while (grew) {
     grew = false;
-    for (const x of all) if (x.parentId && ids.has(x.parentId) && !ids.has(x.id)) (ids.add(x.id), (grew = true));
+    for (const x of all) {
+      if (x.parentId && ids.has(x.parentId) && !ids.has(x.id)) {
+        ids.add(x.id);
+        grew = true;
+      }
+    }
   }
   await db.deck.updateMany({ where: { folderId: { in: [...ids] }, userId: user.id }, data: { folderId: null } });
   await db.folder.delete({ where: { id: folderId } });
