@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge, PageHeader, Progress } from "@/components/ui/misc";
 import { DeckGenerating } from "@/components/app/deck-generating";
-import { DeckEditor, TYPE_LABELS } from "@/components/app/deck-editor";
+import { DeckEditor } from "@/components/app/deck-editor";
+import { TYPE_LABELS } from "@/lib/card-types";
 import { DeckActions } from "@/components/app/deck-actions";
 import { pct } from "@/lib/utils";
 
@@ -62,7 +63,7 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
   const m = deckMastery(deck.cards.filter((c) => !c.suspended));
   const report = deck.generationReport as GenerationReport | null;
   const breakdown = deck.cards.reduce<Record<string, number>>((acc, c) => ((acc[c.cardType] = (acc[c.cardType] ?? 0) + 1), acc), {});
-  const due = deck.cards.filter((c) => !c.suspended && c.due <= new Date()).length;
+  const due = deck.cards.filter((c) => !c.suspended && c.state !== "NEW" && c.due <= new Date()).length;
   const fresh = Date.now() - deck.createdAt.getTime() < 30 * 60_000 && m.new === m.total;
   const examAllowed = deck.isSample || hasFeature(user, "examMode");
 
@@ -95,7 +96,7 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent className="p-5">
             {fresh ? (

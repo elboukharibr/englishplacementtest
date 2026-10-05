@@ -24,7 +24,7 @@ export default async function SettingsPage() {
   return (
     <div>
       <PageHeader title="Settings" />
-      <div className="grid gap-6 lg:grid-cols-[180px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[180px_1fr]">
         <nav aria-label="Settings sections" className="hidden lg:block">
           <ul className="sticky top-20 space-y-0.5 text-sm">
             {NAV.map(([href, label]) => (

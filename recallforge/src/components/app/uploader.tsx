@@ -132,7 +132,7 @@ export function Uploader({ initialTab, maxMb }: { initialTab: "file" | "paste"; 
                   </Button>
                 )}
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Title" htmlFor="title">
                   <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
                 </Field>
@@ -155,7 +155,7 @@ export function Uploader({ initialTab, maxMb }: { initialTab: "file" | "paste"; 
         </div>
       ) : (
         <form onSubmit={submitPaste} className="space-y-4 rounded-2xl border border-border bg-surface p-5">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Title" htmlFor="ptitle">
               <Input id="ptitle" name="title" required maxLength={200} placeholder="e.g. Lecture 5 — Platform governance" />
             </Field>

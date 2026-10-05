@@ -79,7 +79,7 @@ export function GenerateForm(props: { documentId: string; defaultName: string; r
     <div className="space-y-8">
       <section>
         <h3 className="mb-3 font-medium">What should I generate?</h3>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {FOCUS.map(([id, label]) => (
             <label key={id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 text-sm hover:bg-surface-2">
               <Checkbox checked={focus.includes(id)} onCheckedChange={() => toggle(focus, setFocus, id)} aria-label={label} />
@@ -89,10 +89,10 @@ export function GenerateForm(props: { documentId: string; defaultName: string; r
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
           <h3 className="mb-3 font-medium">Number of cards</h3>
-          <div role="radiogroup" aria-label="Number of cards" className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div role="radiogroup" aria-label="Number of cards" className="grid grid-cols-3 gap-2">
             {SIZES.map(([n, label]) => {
               const disabled = n > props.maxCards;
               return (
@@ -110,7 +110,7 @@ export function GenerateForm(props: { documentId: string; defaultName: string; r
                   title={disabled ? "Available on Pro" : undefined}
                 >
                   <span className="block font-medium">{label}</span>
-                  <span className="text-xs text-muted">{n}</span>
+                  <span className="text-xs text-muted">{disabled ? `${n} · Pro` : n}</span>
                 </button>
               );
             })}
@@ -132,7 +132,7 @@ export function GenerateForm(props: { documentId: string; defaultName: string; r
             Recommended for this document: about {props.recommended}. {props.remainingCards} AI cards left this period.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="difficulty">Difficulty</Label>
             <Select id="difficulty" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
@@ -160,7 +160,7 @@ export function GenerateForm(props: { documentId: string; defaultName: string; r
 
       <section>
         <h3 className="mb-3 font-medium">Card style</h3>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {STYLES.map(([id, label, pro]) => {
             const locked = pro && !isPro;
             return (

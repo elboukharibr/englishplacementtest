@@ -13,6 +13,7 @@ import { SourceButton } from "./source-viewer";
 import { CardText } from "./card-text";
 import { api, ApiError } from "@/lib/client";
 import { cn } from "@/lib/utils";
+import { TYPE_LABELS } from "@/lib/card-types";
 
 export type EditorCard = {
   id: string;
@@ -32,18 +33,6 @@ export type EditorCard = {
   state: string;
 };
 
-export const TYPE_LABELS: Record<string, string> = {
-  basic: "Q&A",
-  definition: "Definition",
-  cloze: "Cloze",
-  comparison: "Comparison",
-  cause_effect: "Cause → effect",
-  scholar: "Scholar",
-  application: "Application",
-  critical: "Critical thinking",
-  scenario: "Scenario",
-  exam: "Exam",
-};
 
 const IMPROVE: [string, string][] = [
   ["easier", "Make easier"],

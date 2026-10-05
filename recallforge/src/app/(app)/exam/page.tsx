@@ -25,7 +25,7 @@ export default async function ExamIndex() {
       {decks.length === 0 ? (
         <EmptyState icon={GraduationCap} title="No decks yet" description="Generate a deck from a document first." />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {decks.map((d) => {
             const allowed = pro || d.isSample;
             return (

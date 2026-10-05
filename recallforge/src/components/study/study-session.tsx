@@ -247,10 +247,10 @@ export function StudySession({ deckIds, mode, topic, title, backHref }: { deckId
   const isCloze = card.cardType === "cloze";
   return (
     <Shell title={title} backHref={backHref} progress={{ done: index, total: queue.length }}>
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col">
+      <div className="mx-auto flex w-full max-w-2xl flex-col sm:pt-6">
         <div
           key={`${card.id}-${index}`}
-          className="card-flip-enter flex min-h-[320px] flex-1 flex-col rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow)] sm:p-10"
+          className="card-flip-enter flex min-h-[320px] flex-col rounded-3xl border border-border bg-surface p-6 shadow-[var(--shadow)] sm:p-10"
           style={{ transform: dragX ? `translateX(${dragX}px) rotate(${dragX / 40}deg)` : undefined, transition: dragX ? "none" : "transform 150ms" }}
           onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
           onTouchMove={(e) => {

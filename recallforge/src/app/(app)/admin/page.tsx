@@ -60,7 +60,7 @@ export default async function AdminPage() {
           <Stat label="Failed jobs (30d)" value={m.failed30} hint={`${m.queued} queued/running now`} tone={m.failed30 ? "warning" : "neutral"} />
         </div>
       </section>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Recent failed jobs</CardTitle>

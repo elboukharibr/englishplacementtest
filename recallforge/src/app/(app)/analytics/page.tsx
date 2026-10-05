@@ -45,7 +45,7 @@ export default async function AnalyticsPage() {
           <Stat label="Recall rate" value={pct(a.week.recall)} hint={delta != null ? `${delta >= 0 ? "+" : ""}${Math.round(delta * 100)} pts vs last week` : undefined} />
         </div>
       </section>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Reviews per day</CardTitle>
@@ -82,7 +82,7 @@ export default async function AnalyticsPage() {
           <Stat label="Study streak" value={`${a.longTerm.streak} days`} />
         </div>
       </section>
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Card maturity</CardTitle>

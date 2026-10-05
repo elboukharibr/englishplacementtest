@@ -192,8 +192,27 @@ export async function generateDeck(deckId: string) {
   // ── Independent verification ──
   await progress(deckId, 76, "Verifying answers against the source…");
   const pool = kept.slice(0, Math.ceil(target * 1.15));
+  // Batch by source section (≤ 12 cards, ≤ ~4k source tokens) so each passage is sent once.
+  const bySection = [...pool].sort((a, b) => a.section.order - b.section.order);
   const vBatches: Candidate[][] = [];
-  for (let i = 0; i < pool.length; i += 10) vBatches.push(pool.slice(i, i + 10));
+  let cur: Candidate[] = [];
+  let curTokens = 0;
+  const seen = new Set<string>();
+  for (const c of bySection) {
+    const add = seen.has(c.section.id) ? 0 : c.section.tokenCount;
+    if (cur.length && (cur.length >= 12 || curTokens + add > 4000)) {
+      vBatches.push(cur);
+      cur = [];
+      curTokens = 0;
+      seen.clear();
+    }
+    if (!seen.has(c.section.id)) {
+      seen.add(c.section.id);
+      curTokens += c.section.tokenCount;
+    }
+    cur.push(c);
+  }
+  if (cur.length) vBatches.push(cur);
   let vDone = 0;
   await mapLimit(vBatches, 3, async (b) => {
     const results = await ai.verifyCards(

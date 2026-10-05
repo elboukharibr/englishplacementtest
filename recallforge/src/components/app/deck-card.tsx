@@ -9,7 +9,7 @@ export function DeckCard({ deck }: { deck: DeckSummary }) {
   const pct = Math.round(deck.mastery.mastery * 100);
   if (deck.status === "GENERATING") {
     return (
-      <Link href={`/decks/${deck.id}`} className="block rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow)] hover:border-primary/40">
+      <Link href={`/decks/${deck.id}`} className="block min-w-0 rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow)] hover:border-primary/40">
         <p className="font-medium">{deck.name}</p>
         <p className="mt-1 flex items-center gap-2 text-sm text-muted">
           <Loader2 className="size-4 animate-spin" /> {deck.statusMessage ?? "Generating…"}
@@ -20,7 +20,7 @@ export function DeckCard({ deck }: { deck: DeckSummary }) {
   }
   if (deck.status === "FAILED") {
     return (
-      <Link href={`/decks/${deck.id}`} className="block rounded-2xl border border-danger/30 bg-danger-soft p-5">
+      <Link href={`/decks/${deck.id}`} className="block min-w-0 rounded-2xl border border-danger/30 bg-danger-soft p-5">
         <p className="font-medium">{deck.name}</p>
         <p className="mt-1 flex items-start gap-2 text-sm text-danger">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {deck.statusMessage ?? "Generation failed."} Open to retry.
@@ -29,7 +29,7 @@ export function DeckCard({ deck }: { deck: DeckSummary }) {
     );
   }
   return (
-    <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow)]">
+    <div className="flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow)]">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <Link href={`/decks/${deck.id}`} className="line-clamp-2 font-medium hover:text-primary">
@@ -46,6 +46,7 @@ export function DeckCard({ deck }: { deck: DeckSummary }) {
         <span className="text-muted">{deck.cardCount} cards</span>
         {deck.subject && <span className="text-muted">{deck.subject}</span>}
         {deck.due > 0 && <span className="font-medium text-warning">{deck.due} due</span>}
+        {deck.newCount > 0 && <span className="text-muted">{deck.newCount} new</span>}
         {deck.needsVerification > 0 && <span className="text-xs text-muted">{deck.needsVerification} to verify</span>}
       </div>
       <div className="mt-3">

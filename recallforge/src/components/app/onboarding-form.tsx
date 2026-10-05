@@ -27,7 +27,7 @@ const GOALS = [
 
 function Choice({ options, value, onChange, name }: { options: readonly (readonly [string, string])[]; value: string | null; onChange: (v: string) => void; name: string }) {
   return (
-    <div role="radiogroup" aria-label={name} className="grid gap-2 sm:grid-cols-2">
+    <div role="radiogroup" aria-label={name} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {options.map(([v, label]) => (
         <button
           key={v}

@@ -56,7 +56,7 @@ export function KnowledgeMap({ nodes, edges }: { nodes: MapNode[]; edges: MapEdg
   const color = (m: number | null) => (m == null ? "var(--muted)" : m >= 0.7 ? "var(--success)" : m >= 0.4 ? "var(--warning)" : "var(--danger)");
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
       <div className="overflow-x-auto rounded-3xl border border-border bg-surface">
         <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[640px]" role="img" aria-label="Concept relationship map">
           {edges.map((e, i) => {

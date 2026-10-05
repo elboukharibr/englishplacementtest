@@ -77,7 +77,7 @@ export default async function DecksPage({ searchParams }: { searchParams: Promis
           </>
         }
       />
-      <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
         <aside className="space-y-5" aria-label="Deck filters">
           <nav className="space-y-0.5">
             {link("all", "All decks")}
@@ -126,7 +126,7 @@ export default async function DecksPage({ searchParams }: { searchParams: Promis
               }
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {decks.map((d) => (
                 <DeckCard key={d.id} deck={d} />
               ))}

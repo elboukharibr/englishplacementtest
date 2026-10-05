@@ -234,7 +234,7 @@ export function ExamSession({ deckId, deckName, oral }: { deckId: string; deckNa
 
       {phase === "result" && result && (
         <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-[200px_1fr]">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[200px_1fr]">
             <div className="rounded-2xl border border-border bg-surface p-5 text-center">
               <p className="text-sm text-muted">Score</p>
               <p className="text-4xl font-semibold">{result.attempt.total.toFixed(1)}/10</p>
@@ -250,7 +250,7 @@ export function ExamSession({ deckId, deckName, oral }: { deckId: string; deckNa
             </div>
           </div>
           <p className="rounded-2xl bg-surface-2 p-4 text-sm">{result.attempt.feedback.summary}</p>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-border bg-surface p-5">
               <p className="mb-2 text-sm font-medium">Your answer</p>
               <p className="whitespace-pre-wrap text-sm text-fg/80">{result.attempt.userAnswer}</p>
@@ -267,7 +267,7 @@ export function ExamSession({ deckId, deckName, oral }: { deckId: string; deckNa
               )}
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <FeedbackList title="Concepts you covered" items={result.attempt.feedback.covered} tone="success" />
             <FeedbackList title="Missing concepts" items={result.attempt.feedback.missing} tone="warning" />
             <FeedbackList title="Inaccuracies" items={result.attempt.feedback.inaccuracies} tone="danger" empty="None found." />

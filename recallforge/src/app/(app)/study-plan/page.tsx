@@ -53,7 +53,7 @@ export default async function StudyPlanPage() {
       {plan.days.every((d) => d.total === 0) ? (
         <EmptyState icon={CalendarDays} title="Nothing scheduled" description="Generate a deck to start building a plan." />
       ) : (
-        <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {plan.days.map((d) => (
             <li key={d.date}>
               <Card className={d.date === today ? "ring-2 ring-primary" : undefined}>

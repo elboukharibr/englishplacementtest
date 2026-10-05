@@ -110,13 +110,27 @@ Use the chunk ids above for source_chunk_id. Return exactly ${input.count} cards
 
   async verifyCards(cards: CardForVerification[], ctx: AICallContext) {
     if (!cards.length) return [];
-    const user = cards
-      .map(
-        (c) => `<card id="${c.id}">\nQ: ${c.question}\nA: ${c.answer}\n<source>\n${c.sourceText}\n</source>\n</card>`,
-      )
-      .join("\n\n");
+    // Each distinct source passage is sent once; cards reference it by id (cuts input tokens sharply).
+    const sources = new Map<string, string>();
+    const sourceIdFor = (text: string) => {
+      for (const [id, t] of sources) if (t === text) return id;
+      const id = `src${sources.size + 1}`;
+      sources.set(id, text);
+      return id;
+    };
+    const cardBlock = cards
+      .map((c) => `<card id="${c.id}" source="${sourceIdFor(c.sourceText)}">\nQ: ${c.question}\nA: ${c.answer}\n</card>`)
+      .join("\n");
+    const sourceBlock = [...sources].map(([id, t]) => `<source id="${id}">\n${t}\n</source>`).join("\n\n");
     const res = await this.backend.structured(
-      { schema: VerificationSchema, schemaName: "verification", system: VERIFICATION_SYSTEM, user: `Check each card against its own source.\n\n${user}`, tier: "fast", maxTokens: 6000 },
+      {
+        schema: VerificationSchema,
+        schemaName: "verification",
+        system: VERIFICATION_SYSTEM,
+        user: `Sources:\n${sourceBlock}\n\nCheck each card only against the source it references.\n\n${cardBlock}`,
+        tier: "fast",
+        maxTokens: 6000,
+      },
       ctx,
     );
     return res.results;

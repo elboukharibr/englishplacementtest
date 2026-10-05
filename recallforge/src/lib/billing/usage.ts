@@ -1,4 +1,5 @@
 import type { Plan } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { QuotaError } from "@/lib/errors";
 import { limitsFor, type Feature } from "./plans";
@@ -15,26 +16,45 @@ export async function currentPeriod(userId: string, now = new Date()): Promise<{
   return { start, end };
 }
 
-export async function getUsage(userId: string) {
+/** Ensures the usage row for the current period exists. Race-safe (INSERT … ON CONFLICT). */
+async function ensureUsageRow(userId: string) {
   const period = await currentPeriod(userId);
-  const usage = await db.usage.upsert({
-    where: { userId_periodStart: { userId, periodStart: period.start } },
-    create: { userId, periodStart: period.start, periodEnd: period.end },
-    update: {},
-  });
-  return usage;
+  await db.$executeRaw`
+    INSERT INTO "Usage" ("id", "userId", "periodStart", "periodEnd")
+    VALUES (${"usg_" + randomUUID().replace(/-/g, "")}, ${userId}, ${period.start}, ${period.end})
+    ON CONFLICT ("userId", "periodStart") DO NOTHING`;
+  return period;
+}
+
+export async function getUsage(userId: string) {
+  const period = await ensureUsageRow(userId);
+  return db.usage.findUniqueOrThrow({ where: { userId_periodStart: { userId, periodStart: period.start } } });
 }
 
 export type UsageField = "documents" | "pages" | "cardsGenerated" | "aiRequests" | "minutesSaved";
 
-export async function incrementUsage(userId: string, field: UsageField, by: number) {
-  if (by === 0) return;
-  const period = await currentPeriod(userId);
-  await db.usage.upsert({
-    where: { userId_periodStart: { userId, periodStart: period.start } },
-    create: { userId, periodStart: period.start, periodEnd: period.end, [field]: by },
-    update: { [field]: { increment: by } },
-  });
+const USAGE_COLUMNS: Record<string, string> = {
+  documents: "documents",
+  pages: "pages",
+  cardsGenerated: "cardsGenerated",
+  aiRequests: "aiRequests",
+  minutesSaved: "minutesSaved",
+  tokensIn: "tokensIn",
+  tokensOut: "tokensOut",
+  costMicros: "costMicros",
+};
+
+/** Atomically increments usage counters for the current period. */
+export async function incrementUsage(userId: string, field: UsageField | "tokensIn" | "tokensOut" | "costMicros", by: number) {
+  return incrementUsageMany(userId, { [field]: by });
+}
+
+export async function incrementUsageMany(userId: string, deltas: Partial<Record<UsageField | "tokensIn" | "tokensOut" | "costMicros", number>>) {
+  const entries = Object.entries(deltas).filter(([k, v]) => USAGE_COLUMNS[k] && v);
+  if (!entries.length) return;
+  const period = await ensureUsageRow(userId);
+  const sets = entries.map(([k], i) => `"${USAGE_COLUMNS[k]}" = "${USAGE_COLUMNS[k]}" + $${i + 3}`).join(", ");
+  await db.$executeRawUnsafe(`UPDATE "Usage" SET ${sets} WHERE "userId" = $1 AND "periodStart" = $2`, userId, period.start, ...entries.map(([, v]) => Math.round(v!)));
 }
 
 export function minutesSavedFor(cards: number) {

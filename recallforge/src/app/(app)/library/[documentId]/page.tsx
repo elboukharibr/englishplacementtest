@@ -63,7 +63,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ docum
                   We analyzed your {analysis.pages}-page {analysis.pagesEstimated ? "document" : doc.fileType === "pptx" ? "slide deck" : "document"}.
                 </h2>
               </div>
-              <CardContent className="grid gap-6 p-6 md:grid-cols-[1.4fr_1fr]">
+              <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-[1.4fr_1fr]">
                 <div>
                   <p className="mb-3 text-sm text-muted">We found:</p>
                   <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">

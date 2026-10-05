@@ -68,7 +68,7 @@ export function SettingsForms({ initial }: { initial: S }) {
   return (
     <div className="space-y-6">
       <Section id="profile" title="Profile">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Name" htmlFor="s-name">
             <Input id="s-name" value={s.name} onChange={(e) => set("name", e.target.value)} />
           </Field>
@@ -82,7 +82,7 @@ export function SettingsForms({ initial }: { initial: S }) {
       </Section>
 
       <Section id="study" title="Study preferences">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="What are you studying?" htmlFor="s-ctx">
             <Select id="s-ctx" value={s.studyContext} onChange={(e) => set("studyContext", e.target.value)}>
               <option value="university">University course</option>
@@ -140,7 +140,7 @@ export function SettingsForms({ initial }: { initial: S }) {
       </Section>
 
       <Section id="review" title="Review settings" description="Target retention is the recall probability FSRS aims for when it schedules a review. Higher means more reviews.">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Daily review goal (cards)" htmlFor="s-daily" hint="Also limits new cards per day to about 40% of this.">
             <Input id="s-daily" type="number" min={5} max={1000} value={s.dailyReviewGoal} onChange={(e) => set("dailyReviewGoal", Number(e.target.value))} />
           </Field>
@@ -187,7 +187,7 @@ export function SettingsForms({ initial }: { initial: S }) {
 
       <Section id="account" title="Password">
         <form
-          className="grid gap-4 sm:grid-cols-2"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2"
           onSubmit={async (e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);

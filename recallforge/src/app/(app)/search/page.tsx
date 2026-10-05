@@ -30,7 +30,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       ) : total === 0 ? (
         <EmptyState icon={SearchIcon} title={`No results for “${q}”`} description="Try a broader term or check the spelling." />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {r.concepts.length > 0 && (
             <Section title="Concepts & definitions">
               {r.concepts.map((c) => (

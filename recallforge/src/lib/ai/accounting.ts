@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { costMicros } from "./cost";
-import { currentPeriod } from "@/lib/billing/usage";
+import { incrementUsageMany } from "@/lib/billing/usage";
 
 /** Records one model call for cost tracking (admin margin metric) and the user's usage row. */
 export async function recordAiCall(entry: {
@@ -31,15 +31,8 @@ export async function recordAiCall(entry: {
       },
     });
     if (entry.userId) {
-      const user = await db.user.findUnique({ where: { id: entry.userId }, select: { id: true, plan: true } });
-      if (user) {
-        const period = await currentPeriod(user.id);
-        await db.usage.upsert({
-          where: { userId_periodStart: { userId: user.id, periodStart: period.start } },
-          create: { userId: user.id, periodStart: period.start, periodEnd: period.end, tokensIn: entry.tokensIn, tokensOut: entry.tokensOut, costMicros: cost },
-          update: { tokensIn: { increment: entry.tokensIn }, tokensOut: { increment: entry.tokensOut }, costMicros: { increment: cost } },
-        });
-      }
+      const exists = await db.user.findUnique({ where: { id: entry.userId }, select: { id: true } });
+      if (exists) await incrementUsageMany(entry.userId, { tokensIn: entry.tokensIn, tokensOut: entry.tokensOut, costMicros: cost });
     }
   } catch (e) {
     console.error("[ai] failed to record usage", e);

@@ -94,7 +94,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map(({ d, decks, cards, mastery }) => (
             <Link key={d.id} href={`/library/${d.id}`} className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow)] hover:border-primary/40">
               <div className="flex items-start justify-between gap-2">

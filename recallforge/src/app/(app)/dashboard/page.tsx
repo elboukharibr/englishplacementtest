@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   ]);
   const daysToExam = user.examDate ? Math.ceil((user.examDate.getTime() - Date.now()) / 86400000) : null;
   const hasOwnDecks = decks.some((d) => !d.isSample);
-  const hour = new Date().getHours();
+  const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: user.timezone }).format(new Date()));
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Today&apos;s review</CardTitle>
@@ -100,9 +100,16 @@ export default async function DashboardPage() {
                 </Button>
               </div>
             ) : (
-              <p className="text-sm text-muted">
-                You&apos;re all caught up. {stats.newAvailable > 0 ? `${stats.newAvailable} new cards are waiting whenever you want to learn more.` : "Upload material to create more cards."}
-              </p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted">
+                  No reviews are due. {stats.newAvailable > 0 ? `${stats.newAvailable} new cards are ready to learn.` : "Upload material to create more cards."}
+                </p>
+                {stats.newAvailable > 0 && (
+                  <Button asChild size="lg">
+                    <Link href="/study/all?mode=study">Learn new cards</Link>
+                  </Button>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -163,7 +170,7 @@ export default async function DashboardPage() {
             }
           />
         )}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {decks.map((d) => (
             <DeckCard key={d.id} deck={d} />
           ))}

@@ -17,6 +17,7 @@ export type DeckSummary = {
   tags: string[];
   cardCount: number;
   due: number;
+  newCount: number;
   needsVerification: number;
   mastery: MasteryBreakdown;
   lastStudiedAt: Date | null;
@@ -49,7 +50,8 @@ export async function listDeckSummaries(userId: string, opts: { includeArchived?
     folderId: d.folderId,
     tags: d.tags,
     cardCount: d.cards.length,
-    due: d.cards.filter((c) => c.due <= now).length,
+    due: d.cards.filter((c) => c.state !== "NEW" && c.due <= now).length,
+    newCount: d.cards.filter((c) => c.state === "NEW").length,
     needsVerification: d.cards.filter((c) => c.needsVerification).length,
     mastery: deckMastery(d.cards, now),
     lastStudiedAt: d.lastStudiedAt,
